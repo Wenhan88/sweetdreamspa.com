@@ -4,21 +4,26 @@
 <meta charset="UTF-8">
 <title>Rate Sweet Dream Massage</title>
 <link rel="stylesheet" href="style.css">
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
 </head>
+
 <body>
 <header>
-<h1>Rate Us</h1>
+    <h1>Rate Us</h1>
 </header>
+
 <div class="container">
     <h2>Leave Your Feedback</h2>
+
     <div>
-        <label for="name">Name (optional):</label>
+        <label>Name (optional):</label>
         <input type="text" id="name" placeholder="Your name">
     </div>
+
     <div class="stars">
         <span data-value="1">★</span>
         <span data-value="2">★</span>
@@ -26,10 +31,12 @@
         <span data-value="4">★</span>
         <span data-value="5">★</span>
     </div>
+
     <div class="feedback">
-        <textarea id="comment" placeholder="Write your feedback..."></textarea>
+        <textarea id="comment" placeholder="Write your feedback..." maxlength="500"></textarea>
         <button onclick="submitReview()">Submit</button>
     </div>
+
     <h2>All Reviews</h2>
     <div id="reviewsList"></div>
 </div>
@@ -37,46 +44,74 @@
 <script>
 let rating = 0;
 const stars = document.querySelectorAll('.stars span');
-stars.forEach((star, idx)=>{
-    star.addEventListener('click', ()=>{
-        rating = star.getAttribute('data-value');
-        stars.forEach(s => s.classList.remove('selected'));
-        for(let i=0;i<rating;i++) stars[i].classList.add('selected');
+
+// 安全处理文字
+function safe(text) {
+    return text ? text.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+}
+
+// 点击星星
+stars.forEach((star) => {
+    star.addEventListener('click', () => {
+        rating = parseInt(star.getAttribute('data-value'));
+        updateStars();
     });
 });
 
-function submitReview(){
-    const name = document.getElementById('name').value || 'Anonymous';
-    const comment = document.getElementById('comment').value;
-    if(rating==0){ alert('Please select a star rating!'); return; }
-    db.collection('reviews').add({
-        name:name,
-        rating: parseInt(rating),
-        comment: comment,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(()=>{
-        alert('Thank you for your review!');
-        rating = 0;
-        stars.forEach(s=>s.classList.remove('selected'));
-        document.getElementById('comment').value='';
+function updateStars() {
+    stars.forEach((s, i) => {
+        s.classList.toggle('selected', i < rating);
     });
 }
 
-// Load reviews
-db.collection('reviews').orderBy('rating','desc').onSnapshot(snapshot=>{
-    const reviewsDiv = document.getElementById('reviewsList');
-    reviewsDiv.innerHTML='';
-    snapshot.forEach(doc=>{
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.style.border="1px solid #ccc";
-        div.style.margin="5px";
-        div.style.padding="5px";
-        div.innerHTML = `<strong>${data.name} (${data.rating}★)</strong><p>${data.comment}</p >`;
-        reviewsDiv.appendChild(div);
+// 提交评论
+function submitReview() {
+    const name = safe(document.getElementById('name').value || "Anonymous");
+    const comment = safe(document.getElementById('comment').value.trim());
+
+    if (rating === 0) {
+        alert("Please select a star rating!");
+        return;
+    }
+    if (comment.length < 2) {
+        alert("Please write a longer comment.");
+        return;
+    }
+
+    db.collection("reviews").add({
+        name,
+        rating,
+        comment,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        alert("Thank you for your review!");
+
+        rating = 0;
+        updateStars();
+        document.getElementById("comment").value = "";
+        document.getElementById("name").value = "";
+    });
+}
+
+// 加载评论（最新在前）
+db.collection("reviews")
+  .orderBy("timestamp", "desc")
+  .onSnapshot(snapshot => {
+    const box = document.getElementById("reviewsList");
+    box.innerHTML = "";
+
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        box.innerHTML += `
+            <div style="border:1px solid #ccc;padding:10px;margin:5px;border-radius:6px;">
+                <strong>${safe(d.name)} (${d.rating}★)</strong>
+                <p>${safe(d.comment)}</p >
+            </div>
+        `;
     });
 });
 </script>
+
 </body>
 </html>
 
