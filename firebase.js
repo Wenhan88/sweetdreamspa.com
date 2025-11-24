@@ -1,9 +1,4 @@
-// js/firebase.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
-// Firebase 配置
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyD0zppikT3B7wCAuwaIaugJenzCJIHXeYI",
   authDomain: "sweetdreammassage-6281e.firebaseapp.com",
@@ -13,9 +8,8 @@ const firebaseConfig = {
   appId: "1:227955669632:web:1d870311614bb40d66c465"
 };
 
-// 初始化 Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize
+firebase.initializeApp(firebaseConfig);
 
-export { auth, db, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+const auth = firebase.auth();
+const db   = firebase.firestore();
