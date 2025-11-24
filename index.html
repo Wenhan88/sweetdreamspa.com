@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Sweet Dream Massage</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/firebase.js"></script>
+<meta charset="UTF-8">
+<title>Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
 </head>
+
 <body>
 <header>
     <h1>Sweet Dream Massage</h1>
@@ -26,28 +28,25 @@
 
 <div class="container">
     <h2>Welcome to Sweet Dream Massage</h2>
-    <p>Clean, nice, comfortable, good massage in La Jolla, CA.</p >
+    <p>Clean, nice, comfortable massage in La Jolla.</p >
 
     <div class="carousel">
-        < img src="images/massage1.jpg" class="active" alt="Massage Room 1">
-        < img src="images/massage2.jpg" alt="Massage Room 2">
-        < img src="images/massage3.jpg" alt="Relaxing Environment">
+        < img src="images/massage1.jpg" class="active">
+        < img src="images/massage2.jpg">
+        < img src="images/massage3.jpg">
     </div>
 
     <a class="button" href="tel:8582418022">Call Us</a >
     <a class="button" href="contact.html">Hours</a >
-    <a class="button" href="https://www.google.com/maps/place/7723+Fay+Ave,+La+Jolla,+CA+92037" target="_blank">Address</a >
-    <a class="button" href="services.html">View Services</a >
-    <a class="button" href="rating.html">Rate Us</a >
+    <a class="button" href="https://www.google.com/maps/place/7723+Fay+Ave,+La+Jolla" target="_blank">Address</a >
     <a class="button" href="appointment.html">Book Now</a >
 
-    <div class="social-buttons">
-        <a href="https://www.facebook.com/sharer/sharer.php?u=https://YourWebsiteURL/" class="facebook" target="_blank">Share on Facebook</a >
-        <a href="https://www.instagram.com/" class="instagram" target="_blank">Share on Instagram</a >
-    </div>
+    <h2>Top Reviews</h2>
+    <div id="topReviews"></div>
 </div>
 
 <script>
+// Carousel
 let slides = document.querySelectorAll('.carousel img');
 let current = 0;
 setInterval(() => {
@@ -55,6 +54,26 @@ setInterval(() => {
   current = (current + 1) % slides.length;
   slides[current].classList.add('active');
 }, 3000);
+
+// Load 3 best reviews (>= 4 stars)
+db.collection("reviews")
+  .where("rating", ">=", 4)
+  .orderBy("rating", "desc")
+  .orderBy("timestamp", "desc")
+  .limit(3)
+  .get()
+  .then(snapshot => {
+    const box = document.getElementById("topReviews");
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        box.innerHTML += `
+            <div style="padding:10px;border:1px solid #ccc;margin:5px;border-radius:6px;">
+                <strong>${d.name} (${d.rating}★)</strong>
+                <p>${d.comment}</p >
+            </div>
+        `;
+    });
+  });
 </script>
 </body>
 </html>
