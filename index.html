@@ -4,6 +4,35 @@
   <meta charset="UTF-8">
   <title>Sweet Dream Massage - Home</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* 轮播样式 */
+    .carousel {
+      position: relative;
+      max-width: 800px;
+      margin: 20px auto;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    .carousel img {
+      width: 100%;
+      display: none;
+    }
+    .carousel img.active {
+      display: block;
+    }
+    /* 社交分享按钮 */
+    .social-buttons a {
+      display: inline-block;
+      margin: 5px;
+      padding: 10px 15px;
+      background-color: #3b5998; /* Facebook 蓝色 */
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .social-buttons a.instagram { background-color: #E1306C; }
+    .social-buttons a:hover { opacity: 0.8; }
+  </style>
 </head>
 <body>
   <header>
@@ -15,12 +44,45 @@
     <a href=" ">Home</a >
     <a href="services.html">Services</a >
     <a href="contact.html">Contact</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="https://www.facebook.com/" target="_blank">Share</a >
   </nav>
 
   <div class="container">
     <h2>Welcome to Sweet Dream Massage</h2>
     <p>We provide clean, comfortable, and professional massage services in La Jolla, CA.</p >
+
+    <!-- 轮播 -->
+    <div class="carousel">
+      < img src="images/massage1.jpg" class="active" alt="Massage Room 1">
+      < img src="images/massage2.jpg" alt="Massage Room 2">
+      < img src="images/massage3.jpg" alt="Relaxing Environment">
+    </div>
+
+    <!-- 首页按钮 -->
+    <a class="button" href="tel:8582418022">Call Us</a >
+    <a class="button" href="contact.html">Hours</a >
+    <a class="button" href="contact.html">Address</a >
     <a class="button" href="services.html">View Services</a >
+    <a class="button" href="rating.html">Rate Us</a >
+
+    <!-- 社交分享 -->
+    <div class="social-buttons">
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://YourUsername.github.io/SweetDreamMassage/" target="_blank">Share on Facebook</a >
+      <a href="https://www.instagram.com/" class="instagram" target="_blank">Share on Instagram</a >
+    </div>
   </div>
+
+  <!-- 轮播脚本 -->
+  <script>
+    let slides = document.querySelectorAll('.carousel img');
+    let current = 0;
+    setInterval(() => {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+    }, 3000); // 每3秒切换图片
+  </script>
 </body>
 </html>
+
