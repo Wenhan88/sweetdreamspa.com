@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sweet Dream Massage | La Jolla Massage Spa</title>
+
+<!-- SEO -->
+<meta name="description" content="Sweet Dream Massage - Professional massage in La Jolla. Open 9AM–10PM daily. Book appointments, view services, and check real customer reviews.">
+<meta name="keywords" content="Massage, La Jolla Massage, Spa, Deep Tissue, Swedish Massage, Hot Stone, Foot Massage, Couples Massage">
+
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+</head>
+
+<body>
+
+<header>
+    <h1>Sweet Dream Massage</h1>
+    <p>Relax · Refresh · Rejuvenate</p >
+
+    <!-- ★ 营业状态 -->
+    <p id="openStatus" style="font-size:18px; font-weight:bold;"></p >
+</header>
+
+<nav>
+    <a href=" ">Home</a >
+    <a href="services.html">Services</a >
+    <a href="contact.html">Contact</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="appointment.html">Appointment</a >
+    <a href="admin.html">Admin</a >
+</nav>
+
+<div class="container">
+
+<!-- ★ 商家信息卡片 -->
+<div class="info-card">
+    <h2>Sweet Dream Massage</h2>
+    <p>📍 7723 Fay Ave, La Jolla, CA 92037</p >
+    <p>⏰ Open Daily: <strong>9:00 AM – 10:00 PM</strong></p >
+    <p>📞 <a href="tel:8582418022">858-241-8022</a ></p >
+
+    <a class="button" href="sms:8582418022?body=Hi! I want to book a massage.">Text Us</a >
+    <a class="button" href="https://www.google.com/maps/place/7723+Fay+Ave,+La+Jolla" target="_blank">Get Directions</a >
+    <a class="button" id="googleReview" target="_blank">Leave Google Review</a >
+</div>
+
+<!-- ★ 轮播图 -->
+<div class="carousel">
+    < img src="images/massage1.jpg" class="active">
+    < img src="images/massage2.jpg">
+    < img src="images/massage3.jpg">
+</div>
+
+<!-- ★ 今日可预约时间 -->
+<h2>Today’s Available Times</h2>
+<div id="availableTimes"></div>
+
+<!-- ★ 最佳评价 -->
+<h2>Top Reviews</h2>
+<div id="topReviews"></div>
+
+<!-- ★ Google 地图 -->
+<h2>Find Us</h2>
+<div class="map-container">
+<iframe
+  width="100%"
+  height="300"
+  style="border:0"
+  loading="lazy"
+  allowfullscreen
+  src="https://www.google.com/maps/embed/v1/place?key=AIzaSyD0zppikT3B7wCAuwaIaugJenzCJIHXeYI&q=7723+Fay+Ave,+La+Jolla,+CA">
+</iframe>
+</div>
+
+</div>
+
+
+<script>
+// ★ 营业状态计算（9 AM – 10 PM）
+function updateOpenStatus(){
+    const now = new Date();
+    let hour = now.getHours();
+    let status = "";
+
+    if(hour >= 9 && hour < 22){
+        status = "🟢 OPEN NOW";
+    } else {
+        status = "🔴 CLOSED";
+    }
+    document.getElementById("openStatus").innerText = status;
+}
+updateOpenStatus();
+
+
+// ★ 轮播图
+let slides = document.querySelectorAll('.carousel img');
+let current = 0;
+setInterval(() => {
+  slides[current].classList.remove('active');
+  current = (current + 1) % slides.length;
+  slides[current].classList.add('active');
+}, 3500);
+
+
+// ★ Google Review link（自动生成）
+document.getElementById("googleReview").href =
+ "https://search.google.com/local/writereview?placeid=ChIJFyBEiyQG5YARdEWHLsOZoQc";
+
+
+// ★ 今日可预约时间（过滤已预约）
+function loadAvailableTimes(){
+    const now = new Date();
+    const today = now.toISOString().split("T")[0]; // yyyy-mm-dd
+
+    db.collection("appointments")
+      .where("date","==",today)
+      .get()
+      .then(snapshot => {
+        const booked = snapshot.docs.map(doc => doc.data().time);
+        const times = [];
+
+        for(let h=9; h<=22; h++){
+            let ampm = h<12?"AM":"PM";
+            let hour = h>12?h-12:h;
+            let list = [`${hour}:00 ${ampm}`, `${hour}:30 ${ampm}`];
+
+            list.forEach(t=>{
+                if(!booked.includes(t)){
+                    times.push(t);
+                }
+            });
+        }
+
+        document.getElementById("availableTimes").innerHTML =
+            times.length ?
+            times.map(t=>`<span class="time-tag">${t}</span>`).join("") :
+            "<p>No available times today.</p >";
+    });
+}
+loadAvailableTimes();
+
+
+// ★ Top Reviews (>=4 星)
+db.collection("reviews")
+  .where("rating", ">=", 4)
+  .orderBy("rating", "desc")
+  .orderBy("timestamp", "desc")
+  .limit(3)
+  .get()
+  .then(snapshot =>{
+    let box = document.getElementById("topReviews");
+    snapshot.forEach(doc=>{
+        let d = doc.data();
+        box.innerHTML += `
+            <div class="review-card">
+                <strong>${d.name} (${d.rating}★)</strong>
+                <p>${d.comment}</p >
+            </div>
+        `;
+    });
+  });
+</script>
+
+</body>
+</html>
