@@ -1,0 +1,20 @@
+{
+  "name": "functions",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": "18"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.10.1",
+    "firebase-functions": "^4.5.0",
+    "@google-cloud/storage": "^6.11.0",
+    "twilio": "^4.17.1",
+    "nodemailer": "^6.9.3"
+  }
+}
