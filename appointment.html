@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Book Appointment</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+</head>
+<body>
+<header><h1>Book Your Appointment</h1></header>
+<div class="container">
+    <label for="name">Name:</label><input type="text" id="name">
+    <label for="phone">Phone:</label><input type="text" id="phone">
+    <label for="date">Date:</label><input type="date" id="date">
+    <label for="time">Time:</label>
+    <select id="time">
+        <!-- 9AM - 10PM 30分钟间隔 -->
+        <script>
+            for(let h=9; h<=22; h++){
+                let ampm = h<12?'AM':'PM';
+                let hour = h>12?h-12:h;
+                let option = `<option>${hour}:00 ${ampm}</option><option>${hour}:30 ${ampm}</option>`;
+                document.write(option);
+            }
+        </script>
+    </select>
+    <button onclick="submitAppointment()">Book Now</button>
+</div>
+<script>
+function submitAppointment(){
+    const name=document.getElementById('name').value;
+    const phone=document.getElementById('phone').value;
+    const date=document.getElementById('date').value;
+    const time=document.getElementById('time').value;
+    if(!name||!phone||!date||!time){ alert('Please fill all fields'); return; }
+    db.collection('appointments').add({
+        name, phone, date, time,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{
+        alert('Appointment booked!');
+        window.location.href='confirm.html?name='+encodeURIComponent(name)+'&date='+encodeURIComponent(date)+'&time='+encodeURIComponent(time);
+    });
+}
+</script>
