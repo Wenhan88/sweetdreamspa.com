@@ -1,28 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Sweet Dream Massage - Rate Us</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Rate Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Rate Sweet Dream Massage</h1>
-  </header>
+<header>
+<h1>Rate Us</h1>
+</header>
+<div class="container">
+    <h2>Leave Your Feedback</h2>
+    <div>
+        <label for="name">Name (optional):</label>
+        <input type="text" id="name" placeholder="Your name">
+    </div>
+    <div class="stars">
+        <span data-value="1">★</span>
+        <span data-value="2">★</span>
+        <span data-value="3">★</span>
+        <span data-value="4">★</span>
+        <span data-value="5">★</span>
+    </div>
+    <div class="feedback">
+        <textarea id="comment" placeholder="Write your feedback..."></textarea>
+        <button onclick="submitReview()">Submit</button>
+    </div>
+    <h2>All Reviews</h2>
+    <div id="reviewsList"></div>
+</div>
 
-  <nav>
-    <a href=" ">Home</a >
-    <a href="services.html">Services</a >
-    <a href="contact.html">Contact</a >
-    <a href="rating.html">Rate Us</a >
-    <a href="https://www.facebook.com/" target="_blank">Share</a >
-  </nav>
+<script>
+let rating = 0;
+const stars = document.querySelectorAll('.stars span');
+stars.forEach((star, idx)=>{
+    star.addEventListener('click', ()=>{
+        rating = star.getAttribute('data-value');
+        stars.forEach(s => s.classList.remove('selected'));
+        for(let i=0;i<rating;i++) stars[i].classList.add('selected');
+    });
+});
 
-  <div class="container">
-    <h2>We value your feedback!</h2>
-    <p>Please click the button below to rate us:</p >
-    <a class="button" href="https://forms.gle/ABCDEFG1234567" target="_blank">Rate Now</a >
-    <a class="button" href="index.html">Back to Home</a >
-  </div>
+function submitReview(){
+    const name = document.getElementById('name').value || 'Anonymous';
+    const comment = document.getElementById('comment').value;
+    if(rating==0){ alert('Please select a star rating!'); return; }
+    db.collection('reviews').add({
+        name:name,
+        rating: parseInt(rating),
+        comment: comment,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{
+        alert('Thank you for your review!');
+        rating = 0;
+        stars.forEach(s=>s.classList.remove('selected'));
+        document.getElementById('comment').value='';
+    });
+}
+
+// Load reviews
+db.collection('reviews').orderBy('rating','desc').onSnapshot(snapshot=>{
+    const reviewsDiv = document.getElementById('reviewsList');
+    reviewsDiv.innerHTML='';
+    snapshot.forEach(doc=>{
+        const data = doc.data();
+        const div = document.createElement('div');
+        div.style.border="1px solid #ccc";
+        div.style.margin="5px";
+        div.style.padding="5px";
+        div.innerHTML = `<strong>${data.name} (${data.rating}★)</strong><p>${data.comment}</p >`;
+        reviewsDiv.appendChild(div);
+    });
+});
+</script>
 </body>
 </html>
+
