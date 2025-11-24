@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cancel Appointment - Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+
+</head>
+
+<body>
+
+<header>
+    <h1>Cancel Appointment</h1>
+    <p>We are sorry to hear you need to cancel.</p >
+</header>
+
+<nav>
+    <a href=" ">Home</a >
+    <a href="appointment.html">Book Appointment</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="contact.html">Contact</a >
+</nav>
+
+<div class="container">
+
+    <h2>Find Your Appointment</h2>
+
+    <label>Phone Number:</label>
+    <input type="text" id="phone" placeholder="Phone used in booking">
+
+    <label>Date:</label>
+    <input type="date" id="date">
+
+    <label>Time:</label>
+    <select id="time">
+        <script>
+            for(let h=9; h<=21; h++){
+                let ampm = h<12?'AM':'PM';
+                let hour = h>12?h-12:h;
+                document.write(`<option>${hour}:00 ${ampm}</option>`);
+                document.write(`<option>${hour}:30 ${ampm}</option>`);
+            }
+        </script>
+    </select>
+
+    <button onclick="findAppointment()">Find Appointment</button>
+
+    <div id="result" style="margin-top:20px;"></div>
+
+</div>
+
+
+<script>
+// 将日期 & 时间组合成 JS Date
+function buildDateTime(dateStr, timeStr){
+    const [year, month, day] = dateStr.split("-").map(n => parseInt(n,10));
+
+    let [timePart, ampm] = timeStr.split(" ");
+    let [hour, minute]   = timePart.split(":").map(n => parseInt(n,10));
+
+    if(ampm === "PM" && hour !== 12) hour += 12;
+    if(ampm === "AM" && hour === 12) hour = 0;
+
+    return new Date(year, month - 1, day, hour, minute || 0, 0);
+}
+
+function findAppointment(){
+    const phone = document.getElementById('phone').value.trim();
+    const date  = document.getElementById('date').value;
+    const time  = document.getElementById('time').value;
+
+    if(!phone || !date || !time){
+        alert("Please enter all fields.");
+        return;
+    }
+
+    const selected = buildDateTime(date, time);
+    const now = new Date();
+
+    if(selected < now){
+        alert("You cannot cancel an appointment that has already passed.");
+        return;
+    }
+
+    db.collection("appointments")
+      .where("phone", "==", phone)
+      .where("date", "==", date)
+      .where("time", "==", time)
+      .get()
+      .then(snapshot => {
+        if(snapshot.empty){
+            document.getElementById("result").innerHTML =
+                "<p style='color:red;'>No matching appointment found.</p >";
+            return;
+        }
+
+        // 找到预约
+        const doc = snapshot.docs[0];
+        const d = doc.data();
+
+        document.getElementById("result").innerHTML = `
+            <div class="review-card">
+                <p><strong>Appointment Found:</strong></p >
+                <p>Name: ${d.name}</p >
+                <p>Service: ${d.service}</p >
+                <p>Date: ${d.date}</p >
+                <p>Time: ${d.time}</p >
+                <p>Notes: ${d.notes || "(none)"}</p >
+
+                <button class="button" onclick="cancelAppointment('${doc.id}')">
+                    Confirm Cancel
+                </button>
+            </div>
+        `;
+      });
+}
+
+function cancelAppointment(docId){
+    if(!confirm("Are you sure you want to cancel this appointment?")) return;
+
+    db.collection("appointments").doc(docId).delete()
+      .then(() => {
+        alert("Your appointment has been cancelled.");
+        document.getElementById("result").innerHTML =
+            "<p>Your appointment has been cancelled.</p >";
+
+        // Cloud Functions 会自动通知你（短信+Email）
+      });
+}
+</script>
+
+</body>
+</html>
