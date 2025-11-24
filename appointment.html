@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Book Appointment - Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+</head>
+
+<body>
+<header>
+    <h1>Book Your Appointment</h1>
+    <p>Open Daily: 9:00 AM – 10:00 PM</p >
+</header>
+
+<nav>
+    <a href=" ">Home</a >
+    <a href="services.html">Services</a >
+    <a href="contact.html">Contact</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="appointment.html">Appointment</a >
+    <a href="admin.html">Admin</a >
+</nav>
+
+<div class="container">
+
+    <h2>Appointment Details</h2>
+
+    <label for="name">Name:</label>
+    <input type="text" id="name" placeholder="Your name">
+
+    <label for="phone">Phone:</label>
+    <input type="text" id="phone" placeholder="Your phone number">
+
+    <label for="service">Service:</label>
+    <select id="service">
+        <option value="">-- Select a Service --</option>
+        <option>Swedish Massage</option>
+        <option>Deep Tissue</option>
+        <option>Hot Stone</option>
+        <option>Foot Massage</option>
+        <option>Couples Massage</option>
+        <option>Aromatherapy</option>
+    </select>
+
+    <label for="date">Date:</label>
+    <input type="date" id="date">
+
+    <label for="time">Time:</label>
+    <select id="time">
+        <!-- 9:00 AM – 9:30 PM (每30分钟) -->
+        <script>
+            for(let h=9; h<=21; h++){
+                let ampm = h < 12 ? 'AM' : 'PM';
+                let hour = h > 12 ? h - 12 : h;
+                document.write(`<option>${hour}:00 ${ampm}</option>`);
+                document.write(`<option>${hour}:30 ${ampm}</option>`);
+            }
+        </script>
+    </select>
+
+    <label for="notes">Notes (optional):</label>
+    <textarea id="notes" class="notes-area" placeholder="Any special requests or notes..."></textarea>
+
+    <button onclick="submitAppointment()">Book Now</button>
+</div>
+
+<script>
+// 把 "2025-02-08" + "2:30 PM" -> JS Date，方便做时间比较
+function buildDateTime(dateStr, timeStr){
+    // dateStr: "2025-02-08"
+    // timeStr: "2:30 PM"
+    const [year, month, day] = dateStr.split("-").map(n => parseInt(n, 10));
+
+    let [timePart, ampm] = timeStr.split(" ");
+    let [hour, minute] = timePart.split(":").map(n => parseInt(n, 10));
+
+    if(ampm === "PM" && hour !== 12) hour += 12;
+    if(ampm === "AM" && hour === 12) hour = 0;
+
+    return new Date(year, month - 1, day, hour, minute || 0, 0);
+}
+
+function submitAppointment(){
+    const name    = document.getElementById('name').value.trim();
+    const phone   = document.getElementById('phone').value.trim();
+    const service = document.getElementById('service').value;
+    const date    = document.getElementById('date').value;
+    const time    = document.getElementById('time').value;
+    const notes   = document.getElementById('notes').value.trim();
+
+    if(!name || !phone || !service || !date || !time){
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    const now = new Date();
+    const selected = buildDateTime(date, time);
+
+    // 当天且时间已过，禁止预约
+    if(selected < now){
+        alert("This time has already passed. Please choose a future time.");
+        return;
+    }
+
+    // 营业时间保护（9:00–22:00）
+    const hour = selected.getHours();
+    if(hour < 9 || hour >= 22){
+        alert("Our business hours are 9:00 AM – 10:00 PM.");
+        return;
+    }
+
+    // Double booking check: 同一天同一时间只允许一单
+    db.collection("appointments")
+      .where("date","==",date)
+      .where("time","==",time)
+      .get()
+      .then(q => {
+        if(!q.empty){
+            alert("This time is already booked. Please choose another time.");
+            return;
+        }
+
+        // 写入 Firestore
+        return db.collection("appointments").add({
+            name,
+            phone,
+            service,
+            date,
+            time,
+            notes,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(res => {
+        if(!res) return; // 上面已经拦截了重复预约
+
+        // 跳转到确认页面，把必要信息带过去
+        const url =
+          "confirm.html?name="   + encodeURIComponent(name) +
+          "&date="               + encodeURIComponent(date) +
+          "&time="               + encodeURIComponent(time) +
+          "&service="            + encodeURIComponent(service);
+
+        window.location.href = url;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error: " + err.message);
+      });
+}
+</script>
+
+</body>
+</html>
