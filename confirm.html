@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Appointment Confirmed</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>Appointment Confirmed</h1></header>
+<div class="container" id="confirmDiv"></div>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const name = urlParams.get('name');
+const date = urlParams.get('date');
+const time = urlParams.get('time');
+document.getElementById('confirmDiv').innerHTML = `<p>Thank you ${name}, your appointment is scheduled on ${date} at ${time}.</p >`;
+</script>
+</body>
+</html>
