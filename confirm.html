@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Appointment Confirmed - Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<header>
+    <h1>Appointment Confirmed</h1>
+</header>
+
+<nav>
+    <a href=" ">Home</a >
+    <a href="services.html">Services</a >
+    <a href="contact.html">Contact</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="appointment.html">Appointment</a >
+    <a href="admin.html">Admin</a >
+</nav>
+
+<div class="container" id="confirmDiv"></div>
+
+<script>
+// 安全处理，避免 XSS
+function safe(text) {
+    return text ? text.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+
+const name    = safe(urlParams.get('name')    || '');
+const dateStr = safe(urlParams.get('date')    || '');
+const timeStr = safe(urlParams.get('time')    || '');
+const service = safe(urlParams.get('service') || 'Massage');
+
+document.getElementById('confirmDiv').innerHTML = `
+    <p>Thank you <strong>${name}</strong>, your appointment is scheduled on</p >
+    <p><strong>${dateStr}</strong> at <strong>${timeStr}</strong></p >
+    <p>Service: <strong>${service}</strong></p >
+
+    <div style="margin-top:20px;">
+        <button class="button" onclick="addToGoogleCalendar()">Add to Google Calendar</button>
+        <button class="button" onclick="downloadICS()">Download .ics File</button>
+    </div>
+`;
+
+// 把 "2025-02-08" + "2:30 PM" -> {dateObj, ymd, startStr, endStr}
+function buildDateTime(dateStr, timeStr, durationMinutes = 60){
+    if (!dateStr || !timeStr) return null;
+
+    const [year, month, day] = dateStr.split("-").map(n => parseInt(n, 10));
+
+    let [timePart, ampm] = timeStr.split(" ");
+    let [hour, minute] = timePart.split(":").map(n => parseInt(n, 10));
+
+    if(ampm === "PM" && hour !== 12) hour += 12;
+    if(ampm === "AM" && hour === 12) hour = 0;
+
+    const start = new Date(year, month - 1, day, hour, minute || 0, 0);
+    const end   = new Date(start.getTime() + durationMinutes * 60000);
+
+    // YYYYMMDDTHHMMSS
+    function formatICS(d){
+        const pad = (n) => n.toString().padStart(2, "0");
+        return d.getFullYear().toString() +
+               pad(d.getMonth()+1) +
+               pad(d.getDate()) +
+               "T" +
+               pad(d.getHours()) +
+               pad(d.getMinutes()) +
+               "00";
+    }
+
+    return {
+        start,
+        end,
+        startICS: formatICS(start),
+        endICS: formatICS(end)
+    };
+}
+
+// ★ 加入 Google Calendar
+function addToGoogleCalendar(){
+    const dt = buildDateTime(urlParams.get('date'), urlParams.get('time'));
+    if(!dt){
+        alert("Missing date/time information.");
+        return;
+    }
+
+    const title = `Sweet Dream Massage - ${service}`;
+    const details = `Massage appointment at Sweet Dream Massage.\nService: ${service}`;
+    const location = "7723 Fay Ave, La Jolla, CA 92037";
+
+    const datesParam = dt.startICS + "/" + dt.endICS;
+
+    const url =
+      "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+      "&text="    + encodeURIComponent(title) +
+      "&dates="   + encodeURIComponent(datesParam) +
+      "&details=" + encodeURIComponent(details) +
+      "&location="+ encodeURIComponent(location);
+
+    window.open(url, "_blank");
+}
+
+// ★ 下载 .ics 文件（Apple / Outlook / 其他日历用）
+function downloadICS(){
+    const dt = buildDateTime(urlParams.get('date'), urlParams.get('time'));
+    if(!dt){
+        alert("Missing date/time information.");
+        return;
+    }
+
+    const title = `Sweet Dream Massage - ${service}`;
+    const description = `Massage appointment at Sweet Dream Massage. Service: ${service}`;
+    const location = "7723 Fay Ave, La Jolla, CA 92037";
+
+    const icsContent =
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Sweet Dream Massage//EN
+BEGIN:VEVENT
+SUMMARY:${title}
+DTSTART:${dt.startICS}
+DTEND:${dt.endICS}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url  = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sweet-dream-appointment.ics";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
