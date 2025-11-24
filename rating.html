@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rate Sweet Dream Massage</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+
+<!-- Chart.js 用于评分分布图 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<header>
+    <h1>Rate Sweet Dream Massage</h1>
+</header>
+
+<nav>
+    <a href=" ">Home</a >
+    <a href="services.html">Services</a >
+    <a href="contact.html">Contact</a >
+    <a href="rating.html">Rate Us</a >
+    <a href="appointment.html">Appointment</a >
+    <a href="admin.html">Admin</a >
+</nav>
+
+<div class="container">
+    <h2>Leave Your Feedback</h2>
+
+    <!-- 打分 + 表单 -->
+    <div>
+        <label for="name">Name (optional):</label>
+        <input type="text" id="name" placeholder="Your name">
+    </div>
+
+    <div class="stars">
+        <span data-value="1">★</span>
+        <span data-value="2">★</span>
+        <span data-value="3">★</span>
+        <span data-value="4">★</span>
+        <span data-value="5">★</span>
+    </div>
+
+    <div class="feedback">
+        <textarea id="comment" placeholder="Write your feedback..." maxlength="500"></textarea>
+        <button onclick="submitReview()">Submit</button>
+    </div>
+
+    <!-- 平均评分 + 统计图 -->
+    <h2>Rating Overview</h2>
+    <p id="ratingSummary">Loading rating summary...</p >
+    <canvas id="ratingChart" style="max-width:500px; margin:0 auto;"></canvas>
+
+    <!-- 全部评论 -->
+    <h2>All Reviews</h2>
+    <div id="reviewsList"></div>
+</div>
+
+<script>
+// ========= 通用工具 =========
+let rating = 0;
+const stars = document.querySelectorAll('.stars span');
+const reviewsDiv = document.getElementById('reviewsList');
+const ratingSummary = document.getElementById('ratingSummary');
+
+// 防止 HTML 注入
+function safe(text) {
+    return text ? text.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+}
+
+// 星星点击
+stars.forEach((star) => {
+    star.addEventListener('click', () => {
+        rating = parseInt(star.getAttribute('data-value'));
+        updateStars();
+    });
+});
+
+function updateStars() {
+    stars.forEach((s, i) => {
+        s.classList.toggle('selected', i < rating);
+    });
+}
+
+// ========= 提交评论 =========
+function submitReview() {
+    const name = safe(document.getElementById('name').value.trim() || 'Anonymous');
+    const commentRaw = document.getElementById('comment').value.trim();
+    const comment = safe(commentRaw);
+
+    if (rating === 0) {
+        alert('Please select a star rating!');
+        return;
+    }
+    if (commentRaw.length < 2) {
+        alert('Please write a longer comment.');
+        return;
+    }
+
+    db.collection('reviews').add({
+        name,
+        rating,
+        comment,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        alert('Thank you for your review!');
+        rating = 0;
+        updateStars();
+        document.getElementById('comment').value = '';
+        document.getElementById('name').value = '';
+    }).catch(err => {
+        alert('Error: ' + err.message);
+    });
+}
+
+// ========= 图表相关 =========
+let chartInstance = null;
+function renderChart(counts) {
+    const ctx = document.getElementById('ratingChart').getContext('2d');
+
+    const labels = ['1★', '2★', '3★', '4★', '5★'];
+    const data = [
+        counts[1] || 0,
+        counts[2] || 0,
+        counts[3] || 0,
+        counts[4] || 0,
+        counts[5] || 0,
+    ];
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Number of Reviews',
+                data,
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, precision: 0 }
+            }
+        }
+    });
+}
+
+// ========= 监听 & 加载评论 + 更新统计 =========
+db.collection('reviews')
+  .orderBy('timestamp', 'desc')
+  .onSnapshot(snapshot => {
+    reviewsDiv.innerHTML = '';
+
+    let counts = {1:0,2:0,3:0,4:0,5:0};
+    let totalRating = 0;
+    let totalReviews = 0;
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const r = data.rating;
+
+        // 统计
+        if (r >= 1 && r <= 5) {
+            counts[r] = (counts[r] || 0) + 1;
+            totalRating += r;
+            totalReviews += 1;
+        }
+
+        // 展示评论
+        const div = document.createElement('div');
+        div.className = "review-item";
+        div.innerHTML = `
+            <strong>${safe(data.name)} (${data.rating}★)</strong>
+            <p>${safe(data.comment)}</p >
+        `;
+        reviewsDiv.appendChild(div);
+    });
+
+    // 更新统计文本 & 图表
+    if (totalReviews === 0) {
+        ratingSummary.innerText = "No reviews yet.";
+        renderChart(counts);
+        return;
+    }
+
+    const avg = (totalRating / totalReviews).toFixed(2);
+    ratingSummary.innerText =
+        `Average Rating: ${avg} ★  ·  Total Reviews: ${totalReviews}`;
+
+    renderChart(counts);
+});
+</script>
+
+</body>
+</html>
